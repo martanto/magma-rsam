@@ -2,11 +2,11 @@ import pandas as pd
 import os
 import numpy as np
 from .validator import validate_matrices, validate_directory, validate_directory_structure
+from .database import db, RsamCSV
 from obspy import read, Trace, Stream, UTCDateTime
 from obspy.clients.filesystem.sds import Client
 from datetime import timedelta
-from typing import Dict, List, Self
-
+from typing import Dict, List, Self, Any
 
 bands: dict[str, list[float]] = {
     'VLP': [0.02, 0.2],
@@ -69,7 +69,8 @@ def remove_trace(stream: Stream) -> Stream:
 
 class RSAM:
     def __init__(self, directory_structure: str, seismic_dir: str, station: str = '*',
-                 date_str: str = None, network: str = 'VG', channel: str = '*', location: str = '*'):
+                 date_str: str = None, network: str = 'VG', channel: str = '*', location: str = '*',
+                 update_db: bool = True):
         """Calculate RSAM value for one day"""
         validate_directory_structure(directory_structure)
         validate_directory(seismic_dir)
@@ -95,7 +96,14 @@ class RSAM:
         self.resample: str = '10min'
         self.stream: Stream | None = self._stream(directory_structure) if date_str is not None else None
         self.results: Dict[str, pd.DataFrame] = {}
-        self.csv: List[str] = []
+        self.csvs: List[Dict[str, Any]] = []
+
+        if update_db:
+            db.connect(reuse_if_open=True)
+            db.create_tables([RsamCSV])
+            db.close()
+
+        self.update_db: bool = update_db
 
     def _sds(self) -> Stream:
         """Returns Stream from Seiscomp Data Structure (SDS)
@@ -105,9 +113,12 @@ class RSAM:
         """
         client = Client(self.seismic_dir)
         return client.get_waveforms(
+            station=self.station,
+            network=self.network,
+            channel=self.channel,
+            location=self.location,
             starttime=self.date_obj,
             endtime=self.date_obj + timedelta(days=1),
-            **self.select,
         )
 
     def merged(self, stream: Stream) -> Stream:
@@ -166,6 +177,7 @@ class RSAM:
         """
         self.date_str: str = date_str
         self.date_obj: UTCDateTime = UTCDateTime(date_str)
+        self.stream: Stream = self._stream(self.directory_structure)
         return self
 
     def resample(self, resample: str) -> Self:
@@ -209,8 +221,7 @@ class RSAM:
         if matrices is not None:
             validate_matrices(matrices)
 
-        stream = self.stream if (self.stream is not None) \
-            else self._stream(self.directory_structure)
+        stream = self.stream
 
         if stream.count() == 0:
             print(f'⚠️ {self.date_str} No data found. Skipped,')
@@ -218,8 +229,7 @@ class RSAM:
 
         for trace in stream:
             df: pd.DataFrame = pd.DataFrame()
-            date_string = trace.stats.starttime.strftime('%Y-%m-%d')
-            print("⌚ Calculating {} for {}".format(date_string, trace.id))
+            print("⌚ Calculating {} for {}".format(self.date_str, trace.id))
             trace = trace.detrend(type='demean')
             series = trace_to_series(trace).resample(self.resample)
 
@@ -229,6 +239,22 @@ class RSAM:
             self.results[trace.id] = df
 
         return self
+
+    def update_database(self, nslc: str, date: str, file_location: str) -> None:
+        if self.update_db:
+            (RsamCSV
+             .insert(
+                nslc=nslc,
+                date=date,
+                file_location=file_location
+            )
+             .on_conflict(
+                conflict_target=[RsamCSV.nslc, RsamCSV.date],
+                preserve=[RsamCSV.nslc, RsamCSV.date],
+                update={RsamCSV.file_location: file_location})
+             .execute())
+
+            db.close()
 
     def save(self, output_dir: str = None) -> Self:
         """Save RSAM results to directory as CSV.
@@ -244,23 +270,33 @@ class RSAM:
 
         os.makedirs(output_dir, exist_ok=True)
 
-        for station, df in self.results.items():
+        for trace_id, df in self.results.items():
 
             if not df.empty:
 
                 date_str = str(df.first_valid_index()).split(' ')[0]
 
-                csv_dir: str = os.path.join(output_dir, station, self.resample)
+                csv_dir: str = os.path.join(output_dir, trace_id, self.resample)
                 os.makedirs(csv_dir, exist_ok=True)
 
-                csv_file = os.path.join(csv_dir, f'{station}_{date_str}.csv')
+                csv_file = os.path.join(csv_dir, f'{trace_id}_{date_str}.csv')
 
                 # Saving to CSV
                 df.to_csv(csv_file)
 
+                # csv_dict: Dict[str, Any] = {
+                #     'nslc': trace_id,
+                #     'date': date_str,
+                #     'file_location': csv_file
+                # }
+
                 # Return CSV location
-                self.csv.append(csv_file)
+                # self.csvs.append(csv_dict)
+
+                if self.update_db:
+                    self.update_database(trace_id, date_str, csv_file)
+
                 print("💾 Saved to {}".format(csv_file))
             else:
-                print(f'⚠️ Not saved. Not enough data for {station}')
+                print(f'⚠️ Not saved. Not enough data for {trace_id}')
         return self
