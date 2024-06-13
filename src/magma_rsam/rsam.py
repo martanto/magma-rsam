@@ -1,13 +1,9 @@
 import pandas as pd
 import os
 import numpy as np
-import glob
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 from obspy import Trace, Stream, UTCDateTime
 from obspy.clients.filesystem.sds import Client
 from datetime import timedelta
-from datetime import datetime, date
 from typing import Dict, List, Self
 
 bands: dict[str, list[float]] = {
