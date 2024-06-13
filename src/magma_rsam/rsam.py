@@ -1,39 +1,18 @@
 import pandas as pd
 import os
 import numpy as np
+from .validator import validate_matrices, validate_directory, validate_directory_structure
 from obspy import read, Trace, Stream, UTCDateTime
 from obspy.clients.filesystem.sds import Client
 from datetime import timedelta
 from typing import Dict, List, Self
+
 
 bands: dict[str, list[float]] = {
     'VLP': [0.02, 0.2],
     'LP': [0.5, 4.0],
     'VT': [5.0, 18.0]
 }
-
-directory_structures: list[str] = ['sds', 'seisan']
-
-
-def validate_matrices(matrices: List[str]) -> bool | ValueError:
-    default_matrices: List[str] = ['min', 'mean', 'max', 'median', 'std']
-    for metric in matrices:
-        if metric not in default_matrices:
-            raise ValueError(f"Metric {metric} is not valid. Please use one of {default_matrices}")
-    return True
-
-
-def validate_directory_structure(directory_structure: str) -> bool | ValueError:
-    if directory_structure not in directory_structures:
-        raise ValueError(f"Directory structure {directory_structure} is not valid. "
-                         f"Please use one of {directory_structures}")
-    return True
-
-
-def validate_directory(directory: str) -> bool | ValueError:
-    if not os.path.isdir(directory):
-        raise ValueError(f"Directory {directory} is not valid. ")
-    return True
 
 
 def trace_to_series(trace: Trace) -> pd.Series:
