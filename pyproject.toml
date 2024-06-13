@@ -21,6 +21,7 @@ dependencies = [
     "pandas",
     "numpy",
     "matplotlib",
+    "peewee",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -37,6 +38,7 @@ base = [
     "pandas",
     "numpy",
     "matplotlib",
+    "peewee",
 ]
 
 [project.urls]
