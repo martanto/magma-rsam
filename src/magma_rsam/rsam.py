@@ -119,6 +119,11 @@ class RSAM:
         self.csv: List[str] = []
 
     def _sds(self) -> Stream:
+        """Returns Stream from Seiscomp Data Structure (SDS)
+
+        Returns:
+            Stream: Stream from Seiscomp Data Structure (SDS)
+        """
         client = Client(self.seismic_dir)
         return client.get_waveforms(
             starttime=self.date_obj,
@@ -157,6 +162,11 @@ class RSAM:
             return Stream()
 
     def _stream(self, directory_structure: str) -> Stream:
+        """Return Stream from directory structure.
+
+        Returns:
+            Stream: Stream object
+        """
         stream = Stream()
         if directory_structure == 'sds':
             stream = self._sds()
@@ -167,15 +177,41 @@ class RSAM:
         return stream
 
     def date(self, date_str: str) -> Self:
+        """Set date.
+
+        Args:
+            date_str (str): Date string
+
+        Returns:
+            Self
+        """
         self.date_str: str = date_str
         self.date_obj: UTCDateTime = UTCDateTime(date_str)
         return self
 
     def resample(self, resample: str) -> Self:
+        """Set resample value. Refer to pandas resample rules
+
+        Args:
+            resample (str): Resampling rule, Default 10min
+
+        Returns:
+            Self
+        """
         self.resample = resample
         return self
 
     def apply_filter(self, freq_min: float, freq_max: float, corners: int = 4) -> Self:
+        """Apply filter to Stream.
+
+        Args:
+            freq_min (float): Minimum frequency.
+            freq_max (float): Maximum frequency.
+            corners (int): Number of corners.
+
+        Returns:
+            Self
+        """
         stream = self._stream(self.directory_structure)
 
         self.stream = stream.filter('bandpass', freqmin=freq_min,
@@ -183,7 +219,11 @@ class RSAM:
         return self
 
     def calculate(self, matrices=None) -> Self:
+        """Calculate RSAM values.
 
+        Returns:
+            Self
+        """
         if matrices is None:
             matrices = ['min', 'mean', 'max', 'median', 'std']
 
@@ -212,7 +252,14 @@ class RSAM:
         return self
 
     def save(self, output_dir: str = None) -> Self:
+        """Save RSAM results to directory as CSV.
 
+        Args:
+            output_dir (str, optional): Directory to save RSAM results to. Defaults to None.
+
+        Returns:
+            Self
+        """
         if output_dir is None:
             output_dir = os.path.join(os.getcwd(), 'output', 'rsam')
 
