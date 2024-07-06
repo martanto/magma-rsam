@@ -1,5 +1,6 @@
 from playhouse.migrate import *
 import os
+import datetime
 
 
 def database(db_name: str = 'rsam.db'):
@@ -14,11 +15,14 @@ db = SqliteDatabase(database())
 class RsamCSV(Model):
     nslc = CharField(index=True)
     date = DateField()
+    resample = CharField()
     file_location = CharField()
+    created_at = DateTimeField(default=datetime.datetime.now(tz=datetime.timezone.utc))
+    updated_at = DateTimeField(default=datetime.datetime.now(tz=datetime.timezone.utc))
 
     class Meta:
         database = db
         table_name = 'rsam_csvs'
         indexes = (
-            (('nslc', 'date'), True),
+            (('nslc', 'date', 'resample'), True),
         )
