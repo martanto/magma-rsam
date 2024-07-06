@@ -16,6 +16,8 @@ class RsamCSV(Model):
     nslc = CharField(index=True)
     date = DateField()
     resample = CharField()
+    freq_min = FloatField(null=True)
+    freq_max = FloatField(null=True)
     file_location = CharField()
     created_at = DateTimeField(default=datetime.datetime.now(tz=datetime.timezone.utc))
     updated_at = DateTimeField(default=datetime.datetime.now(tz=datetime.timezone.utc))
@@ -24,5 +26,5 @@ class RsamCSV(Model):
         database = db
         table_name = 'rsam_csvs'
         indexes = (
-            (('nslc', 'date', 'resample'), True),
+            (('nslc', 'date', 'freq_min', 'freq_max', 'resample'), True),
         )

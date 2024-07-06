@@ -38,6 +38,8 @@ class RsamTrace:
             db.create_tables([RsamCSV])
             db.close()
 
+        self.freq_max = None
+        self.freq_min = None
         self.update_db: bool = update_db
         self.csv_file: str | None = None
 
@@ -63,6 +65,9 @@ class RsamTrace:
         self.is_filtered: bool = RsamTrace.is_filtered
         self.resample: str = RsamTrace.resample
         self.df: pd.DataFrame = RsamTrace.df
+
+        self.freq_max = None
+        self.freq_min = None
         self.update_db: bool = True
         self.csv_file: str | None = None
         return self
@@ -98,6 +103,8 @@ class RsamTrace:
             corners=corners
         )
 
+        self.freq_min: float = freq_min
+        self.freq_max: float = freq_max
         self.is_filtered = True
         return self
 
@@ -160,8 +167,7 @@ class RsamTrace:
         self.df = df
         return self
 
-    @staticmethod
-    def update_database(nslc: str, date: str, resample: str, file_location: str) -> None:
+    def update_database(self, nslc: str, date: str, resample: str, file_location: str) -> None:
         (RsamCSV
          .insert(
             nslc=nslc,
@@ -174,15 +180,21 @@ class RsamTrace:
             conflict_target=[
                 RsamCSV.nslc,
                 RsamCSV.date,
-                RsamCSV.resample
+                RsamCSV.resample,
+                RsamCSV.freq_min,
+                RsamCSV.freq_max
             ],
             preserve=[
                 RsamCSV.nslc,
                 RsamCSV.date,
-                RsamCSV.resample
+                RsamCSV.resample,
+                RsamCSV.freq_min,
+                RsamCSV.freq_max
             ],
             update={
                 RsamCSV.resample: resample,
+                RsamCSV.freq_min: self.freq_min,
+                RsamCSV.freq_max: self.freq_max,
                 RsamCSV.file_location: file_location,
                 RsamCSV.updated_at: datetime.now(tz=timezone.utc)
             })
