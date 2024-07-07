@@ -1,5 +1,4 @@
 from .rsam_trace import RsamTrace
-from datetime import timedelta
 from obspy import UTCDateTime, Stream
 from obspy.clients.filesystem.sds import Client
 from typing import Dict, Self

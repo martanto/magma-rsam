@@ -168,33 +168,33 @@ class RsamTrace:
         return self
 
     def update_database(self, nslc: str, date: str, resample: str, file_location: str) -> None:
+        filtered: str = f"_{self.freq_min}_{self.freq_max}"
+        key: str = f"{nslc}_{date}_{resample}{filtered}"
+
         (RsamCSV
          .insert(
+            key=key,
             nslc=nslc,
             date=date,
             resample=resample,
+            freq_min=self.freq_min,
+            freq_max=self.freq_max,
             file_location=file_location,
             created_at=datetime.now(tz=timezone.utc)
         )
          .on_conflict(
             conflict_target=[
-                RsamCSV.nslc,
-                RsamCSV.date,
-                RsamCSV.resample,
-                RsamCSV.freq_min,
-                RsamCSV.freq_max
+                RsamCSV.key,
             ],
             preserve=[
+                RsamCSV.key,
                 RsamCSV.nslc,
                 RsamCSV.date,
                 RsamCSV.resample,
                 RsamCSV.freq_min,
-                RsamCSV.freq_max
+                RsamCSV.freq_max,
             ],
             update={
-                RsamCSV.resample: resample,
-                RsamCSV.freq_min: self.freq_min,
-                RsamCSV.freq_max: self.freq_max,
                 RsamCSV.file_location: file_location,
                 RsamCSV.updated_at: datetime.now(tz=timezone.utc)
             })
@@ -217,7 +217,11 @@ class RsamTrace:
                 output_dir = os.path.join(os.getcwd(), 'output', 'rsam')
             os.makedirs(output_dir, exist_ok=True)
 
-            csv_dir: str = os.path.join(output_dir, self.trace.id, self.resample)
+            filtered_dir: str = 'not_filtered'
+            if self.is_filtered is True:
+                filtered_dir: str = f'filtered_{self.freq_min}_{self.freq_max}'
+
+            csv_dir: str = os.path.join(output_dir, self.trace.id, filtered_dir, self.resample)
             os.makedirs(csv_dir, exist_ok=True)
 
             csv_file = os.path.join(csv_dir, f'{self.start_date_str}.csv')

@@ -13,8 +13,9 @@ db = SqliteDatabase(database())
 
 
 class RsamCSV(Model):
+    key = CharField(unique=True, index=True)
     nslc = CharField(index=True)
-    date = DateField()
+    date = DateField(index=True)
     resample = CharField()
     freq_min = FloatField(null=True)
     freq_max = FloatField(null=True)
@@ -25,6 +26,3 @@ class RsamCSV(Model):
     class Meta:
         database = db
         table_name = 'rsam_csvs'
-        indexes = (
-            (('nslc', 'date', 'freq_min', 'freq_max', 'resample'), True),
-        )
