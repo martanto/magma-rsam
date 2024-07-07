@@ -7,7 +7,7 @@ from typing import Dict, Self
 class RSAM:
     def __init__(self, seismic_dir: str, date: str, station: str,
                  channel: str = '*', network: str = 'VG', location: str = '00',
-                 directory_structure: str = 'sds'):
+                 directory_structure: str = 'sds', update_db: bool = True):
         self.date: str = date
         self.station: str = station
         self.channel: str = channel
@@ -19,6 +19,7 @@ class RSAM:
         self.rsam: Dict[str, RsamTrace] = {}
 
         self.filter_is_on: bool = False
+        self.update_db: bool = update_db
         self.corners = None
         self.freq_max = None
         self.freq_min = None
@@ -60,7 +61,7 @@ class RSAM:
             return self
 
         for trace in stream:
-            rsam = RsamTrace(trace)
+            rsam = RsamTrace(trace, update_db=self.update_db)
 
             if self.filter_is_on is True:
                 rsam.set_filter(self.freq_min, self.freq_max, self.corners)

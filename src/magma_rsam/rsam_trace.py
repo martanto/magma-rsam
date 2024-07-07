@@ -202,7 +202,7 @@ class RsamTrace:
 
         db.close()
 
-    def save(self, output_dir: str = None) ->  Self:
+    def save(self, output_dir: str = None) -> Self:
         """Save RSAM results to directory as CSV.
 
         Args:
