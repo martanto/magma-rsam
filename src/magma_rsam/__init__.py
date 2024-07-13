@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from magma_rsam.rsam import RSAM
+from magma_rsam.plot_rsam import PlotRsam
 from pkg_resources import get_distribution
 
 __version__ = get_distribution("magma-rsam").version
@@ -12,5 +13,6 @@ __copyright__ = "Copyright (c) 2024, MAGMA Indonesia"
 __url__ = "https://github.com/martanto/magma-rsam"
 
 __all__ = [
-    "RSAM"
+    "RSAM",
+    "PlotRsam",
 ]
