@@ -1,14 +1,19 @@
+import pandas as pd
 from .rsam_trace import RsamTrace
+from .validator import validate_dates
 from obspy import UTCDateTime, Stream
 from obspy.clients.filesystem.sds import Client
-from typing import Dict, Self
+from typing import Dict, List, Self
+from datetime import date
 
 
 class RSAM:
-    def __init__(self, seismic_dir: str, date: str, station: str,
+    def __init__(self, seismic_dir: str, station: str,
                  channel: str = '*', network: str = 'VG', location: str = '00',
-                 directory_structure: str = 'sds', update_db: bool = True):
-        self.date: str = date
+                 start_date: str = None, end_date: str = None, directory_structure: str = 'sds',
+                 update_db: bool = True, resample: str = '10min'):
+        self.start_date = start_date
+        self.end_date = end_date
         self.station: str = station
         self.channel: str = channel
         self.network: str = network
@@ -20,13 +25,25 @@ class RSAM:
 
         self.filter_is_on: bool = False
         self.update_db: bool = update_db
+        self.resample: str = resample
         self.corners = None
         self.freq_max = None
         self.freq_min = None
+        self.files: Dict[str, str] = {}
 
-    def from_sds(self) -> Stream:
-        start_time: UTCDateTime = UTCDateTime(f"{self.date}T00:00:00")
-        end_time: UTCDateTime = UTCDateTime(f"{self.date}T23:59:59")
+    def from_date(self, start_date: str) -> Self:
+        assert date.fromisoformat(start_date), f"❌ date format must be yyyy-mm-dd"
+        self.start_date = start_date
+        return self
+
+    def to_date(self, end_date: str) -> Self:
+        assert date.fromisoformat(end_date), f"❌ date format must be yyyy-mm-dd"
+        self.end_date = end_date
+        return self
+
+    def from_sds(self, date_str: str) -> Stream:
+        start_time: UTCDateTime = UTCDateTime(f"{date_str}T00:00:00")
+        end_time: UTCDateTime = UTCDateTime(f"{date_str}T23:59:59")
 
         client = Client(sds_root=self.seismic_dir)
         stream: Stream = client.get_waveforms(
@@ -51,21 +68,32 @@ class RSAM:
         return self
 
     def run(self) -> Self:
-        stream: Stream = Stream()
+        start_date = self.start_date
+        end_date = self.end_date
+        validate_dates(start_date, end_date)
 
-        if self.directory_structure == 'sds':
-            stream = self.from_sds()
+        # TODO: looping through date
+        dates = pd.date_range(start_date, end_date, freq='1D')
 
-        if len(stream) == 0:
-            print("⚠️ Skip. No traces found")
-            return self
+        for date_obj in dates:
+            date_str: str = date_obj.strftime('%Y-%m-%d')
+            stream: Stream = Stream()
 
-        for trace in stream:
-            rsam = RsamTrace(trace, update_db=self.update_db)
+            if self.directory_structure.lower() == 'sds':
+                stream = self.from_sds(date_str)
+
+            if len(stream) == 0:
+                print(f"⚠️ {date_str} :: Skip. No traces found")
+                continue
 
             if self.filter_is_on is True:
-                rsam.set_filter(self.freq_min, self.freq_max, self.corners)
+                stream.filter('bandpass', freqmin=self.freq_min,
+                              freqmax=self.freq_max, corners=self.corners)
 
-            self.rsam[trace.id] = rsam.calculate().save()
+            for trace in stream:
+                rsam_trace = RsamTrace(trace, update_db=self.update_db)
+                rsam_trace.set_resample(self.resample).calculate().save()
+
+                self.files[rsam_trace.id] = rsam_trace.csv_file
 
         return self
