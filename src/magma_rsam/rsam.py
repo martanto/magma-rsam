@@ -29,7 +29,7 @@ class RSAM:
         self.corners = None
         self.freq_max = None
         self.freq_min = None
-        self.files: Dict[str, str] = {}
+        self.files: Dict[str, List[Dict[str, str]]] = {}
 
     def from_date(self, start_date: str) -> Self:
         assert date.fromisoformat(start_date), f"❌ date format must be yyyy-mm-dd"
@@ -94,6 +94,6 @@ class RSAM:
                 rsam_trace = RsamTrace(trace, update_db=self.update_db)
                 rsam_trace.set_resample(self.resample).calculate().save()
 
-                self.files[rsam_trace.id] = rsam_trace.csv_file
+                self.files[trace.id].append({date_str : rsam_trace.csv_file})
 
         return self
