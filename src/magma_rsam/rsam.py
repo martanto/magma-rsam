@@ -1,6 +1,8 @@
 import pandas as pd
+
 from .rsam_trace import RsamTrace
 from .validator import validate_dates
+from .database import db, RsamCSV
 from magma_converter.search import Search
 from obspy import UTCDateTime, Stream
 from obspy.clients.filesystem.sds import Client
@@ -30,6 +32,12 @@ class RSAM:
 
         self.filter_is_on: bool = False
         self.update_db: bool = update_db
+
+        if update_db is True:
+            db.connect(reuse_if_open=True)
+            db.create_tables([RsamCSV])
+            db.close()
+
         self.corners = None
         self.freq_max = None
         self.freq_min = None
@@ -72,6 +80,32 @@ class RSAM:
         print(f"ℹ️ Filter is on.")
         return self
 
+    @staticmethod
+    def rsam_already_running(station: str, date_str: str) -> RsamCSV | None:
+        query = RsamCSV.select().where(
+            (RsamCSV.key.contains(station)) &
+            (RsamCSV.date == date_str))
+
+        return query.first()
+
+    def add_to_files(self, trace_id: str, date_str: str, file_location: str) -> Self:
+        """Add to self.files
+
+        Args:
+            trace_id (str): trace id/nslc
+            date_str (str): date string
+            file_location (str): CSV file location
+
+        Returns:
+            Self: self
+        """
+        if trace_id not in self.files.keys():
+            self.files[trace_id] = []
+
+        self.files[trace_id].append({date_str: file_location})
+
+        return self
+
     def run(self) -> Self:
         start_date = self.start_date
         end_date = self.end_date
@@ -82,6 +116,16 @@ class RSAM:
 
         for date_obj in dates:
             date_str: str = date_obj.strftime('%Y-%m-%d')
+
+            # Check existing calculated RSAM
+            # If exist then, continue next date
+            # else, calculate
+            rsam_csv = self.rsam_already_running(station=self.station, date_str=date_str)
+
+            if rsam_csv is not None:
+                print(f"✅ {date_str} :: File RSAM for {rsam_csv.nslc} : {rsam_csv.file_location}")
+                self.add_to_files(trace_id=rsam_csv.nslc, date_str=date_str, file_location=rsam_csv.file_location)
+                continue
 
             if self.directory_structure.lower() == 'sds':
                 stream = self.from_sds(date_str)
@@ -109,9 +153,6 @@ class RSAM:
                                        freq_min=self.freq_min, freq_max=self.freq_max)
                 rsam_trace.calculate().save()
 
-                if trace.id not in self.files.keys():
-                    self.files[trace.id] = []
-
-                self.files[trace.id].append({date_str : rsam_trace.csv_file})
+                self.add_to_files(trace_id=trace.id, date_str=date_str, file_location=rsam_trace.csv_file)
 
         return self
