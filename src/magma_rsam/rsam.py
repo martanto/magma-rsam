@@ -1,6 +1,7 @@
 import pandas as pd
 from .rsam_trace import RsamTrace
 from .validator import validate_dates
+from magma_converter.search import Search
 from obspy import UTCDateTime, Stream
 from obspy.clients.filesystem.sds import Client
 from typing import Dict, List, Self
@@ -11,7 +12,7 @@ class RSAM:
     def __init__(self, seismic_dir: str, station: str,
                  channel: str = '*', network: str = 'VG', location: str = '00',
                  start_date: str = None, end_date: str = None, directory_structure: str = 'sds',
-                 update_db: bool = True, resample: str = '10min'):
+                 update_db: bool = True, ):
         self.start_date = start_date
         self.end_date = end_date
         self.station: str = station
@@ -25,7 +26,6 @@ class RSAM:
 
         self.filter_is_on: bool = False
         self.update_db: bool = update_db
-        self.resample: str = resample
         self.corners = None
         self.freq_max = None
         self.freq_min = None
@@ -65,6 +65,7 @@ class RSAM:
         self.freq_max = freq_max
         self.corners = corners
         self.filter_is_on = True
+        print(f"ℹ️ Filter is on.")
         return self
 
     def run(self) -> Self:
@@ -77,23 +78,36 @@ class RSAM:
 
         for date_obj in dates:
             date_str: str = date_obj.strftime('%Y-%m-%d')
-            stream: Stream = Stream()
 
             if self.directory_structure.lower() == 'sds':
                 stream = self.from_sds(date_str)
+            else:
+                stream = Search(
+                    input_dir=self.seismic_dir,
+                    directory_structure=self.directory_structure,
+                    station = self.station,
+                    channel = self.channel,
+                    network = self.network,
+                    location = self.location
+                ).search(date_str=date_str)
 
             if len(stream) == 0:
                 print(f"⚠️ {date_str} :: Skip. No traces found")
                 continue
 
             if self.filter_is_on is True:
+                print(f"🔄️ Apply filter")
                 stream.filter('bandpass', freqmin=self.freq_min,
                               freqmax=self.freq_max, corners=self.corners)
 
             for trace in stream:
-                rsam_trace = RsamTrace(trace, update_db=self.update_db)
-                rsam_trace.set_resample(self.resample).calculate().save()
+                rsam_trace = RsamTrace(trace, update_db=self.update_db, is_filtered=self.filter_is_on,
+                                       freq_min=self.freq_min, freq_max=self.freq_max)
+                rsam_trace.calculate().save()
 
-                self.files[trace.id].append({date_str : rsam_trace.csv_file})
+                if trace.id not in self.files.keys():
+                    self.files[trace.id] = []
+                else:
+                    self.files[trace.id].append({date_str : rsam_trace.csv_file})
 
         return self

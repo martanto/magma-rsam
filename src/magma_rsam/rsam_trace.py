@@ -10,11 +10,11 @@ from .database import db, RsamCSV
 
 class RsamTrace:
     matrices: List[str] = ['min', 'mean', 'max', 'median', 'std']
-    is_filtered: bool = False
     resample: str = '10min'
     df: pd.DataFrame = pd.DataFrame()
 
-    def __init__(self, trace: Trace, update_db: bool = True):
+    def __init__(self, trace: Trace, update_db: bool = True, is_filtered: bool = False,
+                 freq_min: float = None, freq_max: float = None):
         self.trace_original: Trace = trace
         self.trace: Trace = trace.copy()
 
@@ -29,7 +29,7 @@ class RsamTrace:
         self.id: str = f"{trace.id}_{self.start_date_str}"
 
         self.matrices: List[str] = RsamTrace.matrices
-        self.is_filtered: bool = RsamTrace.is_filtered
+        self.is_filtered: bool = is_filtered
         self.resample: str = RsamTrace.resample
         self.df: pd.DataFrame = RsamTrace.df
 
@@ -38,8 +38,8 @@ class RsamTrace:
             db.create_tables([RsamCSV])
             db.close()
 
-        self.freq_max = None
-        self.freq_min = None
+        self.freq_max = freq_max
+        self.freq_min = freq_min
         self.update_db: bool = update_db
         self.csv_file: str | None = None
 
@@ -62,7 +62,7 @@ class RsamTrace:
         self.id: str = f"{self.trace.id}_{self.start_date_str}"
 
         self.matrices: List[str] = RsamTrace.matrices
-        self.is_filtered: bool = RsamTrace.is_filtered
+        self.is_filtered: bool = self.is_filtered
         self.resample: str = RsamTrace.resample
         self.df: pd.DataFrame = RsamTrace.df
 

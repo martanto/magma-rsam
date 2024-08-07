@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name =  "magma-rsam"
-version = "1.2.0"
+version = "1.3.0"
 authors = [
     {name = "Martanto", email = "martanto@live.com"},
     {name = "Devy Kamil Syahbana", email = "devy.syahbana@gmail.com"},
@@ -22,6 +22,7 @@ dependencies = [
     "numpy",
     "matplotlib",
     "peewee",
+    "magma-converter",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -39,6 +40,7 @@ base = [
     "numpy",
     "matplotlib",
     "peewee",
+    "magma-converter",
 ]
 
 [project.urls]
