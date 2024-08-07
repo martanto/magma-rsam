@@ -15,6 +15,10 @@ class RSAM:
                  update_db: bool = True, ):
         self.start_date = start_date
         self.end_date = end_date
+
+        if end_date is None:
+            self.end_date = date.today().strftime('%Y-%m-%d')
+
         self.station: str = station
         self.channel: str = channel
         self.network: str = network
@@ -107,7 +111,7 @@ class RSAM:
 
                 if trace.id not in self.files.keys():
                     self.files[trace.id] = []
-                else:
-                    self.files[trace.id].append({date_str : rsam_trace.csv_file})
+
+                self.files[trace.id].append({date_str : rsam_trace.csv_file})
 
         return self
