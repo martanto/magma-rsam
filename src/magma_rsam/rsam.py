@@ -80,11 +80,16 @@ class RSAM:
         print(f"ℹ️ Filter is on.")
         return self
 
-    @staticmethod
-    def rsam_already_running(station: str, date_str: str) -> RsamCSV | None:
+    def rsam_already_running(self, station: str, date_str: str) -> RsamCSV | None:
+        freq_min: float = self.freq_min
+        freq_max: float = self.freq_max
+
         query = RsamCSV.select().where(
             (RsamCSV.key.contains(station)) &
-            (RsamCSV.date == date_str))
+            (RsamCSV.date == date_str) &
+            (RsamCSV.freq_min == freq_min) &
+            (RsamCSV.freq_max == freq_max)
+        )
 
         return query.first()
 
