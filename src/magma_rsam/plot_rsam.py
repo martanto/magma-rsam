@@ -53,7 +53,7 @@ class PlotRsam:
 
         if not os.path.isdir(self.rsam_dir):
             raise NotADirectoryError(f"⛔ The directory {self.rsam_dir} does not exist!"
-                                     f"Please run RSAM with the current parameters")
+                                     f" Please run RSAM with the current parameters")
 
     @property
     def rsam_models(self) -> List[RsamCSV]:
