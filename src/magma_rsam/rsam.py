@@ -11,10 +11,17 @@ from datetime import date
 
 
 class RSAM:
-    def __init__(self, seismic_dir: str, station: str,
-                 channel: str = '*', network: str = 'VG', location: str = '00',
-                 start_date: str = None, end_date: str = None, directory_structure: str = 'sds',
-                 update_db: bool = True, ):
+    def __init__(self,
+                 start_date: str,
+                 seismic_dir: str,
+                 station: str,
+                 end_date: str = None,
+                 channel: str = '*',
+                 network: str = 'VG',
+                 location: str = '00',
+                 directory_structure: str = 'sds',
+                 update_db: bool = True,):
+
         self.start_date = start_date
         self.end_date = end_date
 
