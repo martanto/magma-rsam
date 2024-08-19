@@ -18,7 +18,11 @@ def database(db_name: str = 'magma.db'):
     return os.path.join(user_dir, db_name)
 
 
-db = SqliteDatabase(database())
+db = SqliteDatabase(database(), pragmas={
+    'foreign_keys': 1,
+    'journal_mode': 'wal',
+    'cache_size': -32 * 1000
+})
 
 
 class RsamCSV(Model):
