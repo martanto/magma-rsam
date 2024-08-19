@@ -3,10 +3,19 @@ import os
 import datetime
 
 
-def database(db_name: str = 'rsam.db'):
-    db_path = os.path.join(os.getcwd(), 'output', 'database')
-    os.makedirs(db_path, exist_ok=True)
-    return os.path.join(db_path, db_name)
+def database(db_name: str = 'magma.db'):
+    """Database location
+
+    Args:
+        db_name: database name. Default magma.db
+
+    Returns:
+        str: Database location
+    """
+    user_dir: str = os.path.expanduser('~')
+    magma_user_dir: str = os.path.join(user_dir, '.magma')
+    os.makedirs(magma_user_dir, exist_ok=True)
+    return os.path.join(user_dir, db_name)
 
 
 db = SqliteDatabase(database())
