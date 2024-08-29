@@ -1,94 +1,13 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import os
-from .database import db, RsamCSV
+import random
+from .database import RsamCSV
 from .validator import validate_dates
-from typing import Dict, List, Self
-
-
-class Plot:
-    def __init__(self,
-                 df: pd.DataFrame,
-                 matrices: List[str] = ['mean', 'median'],
-                 windows: List[str] = ['1d'],
-                 datetime_interval: int = 3,):
-
-        self.df = df
-        self.matrices = matrices
-        self.windows = windows
-        self.datetime_interval = datetime_interval
-
-        self.continuous_events: List[Dict[str, str | None | List[str]]] = []
-        self.single_events: List[Dict[str, str]] = []
-
-    def configure(self) -> Self:
-        return self
-
-    def add_continuous_events(self, continuous_events: List[Dict[str, str | None | List[str]]] = None) -> Self:
-        """Add continuous events.
-
-        Args:
-            continuous_events (List[Dict[str, str | None | List[str]]]): Continuous events
-                Example:
-                continuous_events = [
-                    {
-                        'name': 'Eruption',
-                        'dates': ['2024-04-16', '2024-04-16'],
-                        'color': 'orange'
-                    },
-                    {
-                        'name': 'Level II',
-                        'dates': ['2024-04-16', '2024-04-18'],
-                        'color': 'orange'
-                    },
-                    .....
-                ]
-
-        Returns:
-            Self
-        """
-        self.continuous_events = self.continuous_events + continuous_events
-        return self
-
-    def add_single_events(self, single_events: List[Dict[str, str]] = None) -> Self:
-        """Add single events.
-
-        Args:
-            single_events (List[Dict[str, str]]): Single events
-                Example:
-                    single_events = [
-                        {
-                            'name': 'Big Eruption',
-                            'dates': '2024-04-16'
-                        },
-                        {
-                            'name': 'Small Eruption',
-                            'dates': '2024-04-16'
-                        },
-                    ]
-        """
-        self.single_events = self.single_events + single_events
-        return self
-
-    def plot(self,
-             matrices: List[str] = ['mean', 'median'],
-             windows: List[str] = ['1d'],
-             datetime_interval: int = 3):
-
-        df = self.df
-
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(12, 4),
-                                layout="constrained", sharex=True)
-
-        axs.set_ylabel('Amplitude (count)')
-
-        axs.scatter(df.index, df['mean'], c='k', alpha=0.2, s=3, label='10 minutes')
-
-        for matrix in matrices:
-            color = 'red' if matrix == 'mean' else 'blue'
-            for window in windows:
-                _column_name = f"{matrix}_{window}"
-                axs.plot(df.index, df[_column_name], c=color, label=_column_name, alpha=1, lw=2)
+from typing import List, Self
+from material_color.color import get_color_list
+from datetime import datetime
 
 
 class PlotRsam:
@@ -116,6 +35,10 @@ class PlotRsam:
 
         rsam_dir: str = os.path.join(os.getcwd(), 'output', 'rsam')
 
+        figures_dir: str = os.path.join(os.getcwd(), 'output', 'figures', 'rsam')
+        os.makedirs(figures_dir, exist_ok=True)
+        self.figures_dir = figures_dir
+
         nslc = f"{network}.{station}.{location}.{channel}"
 
         filtered_dir: str = 'not_filtered'
@@ -134,6 +57,9 @@ class PlotRsam:
             raise NotADirectoryError(f"⛔ The directory {self.rsam_dir} does not exist!"
                                      f" Please run RSAM with the current parameters")
 
+        self.y_min = None
+        self.y_max = None
+
     def with_filter(self, freq_min: float, freq_max: float) -> Self:
         """Set freq_min and freq_max to plot.
 
@@ -148,8 +74,11 @@ class PlotRsam:
         self.freq_min: float = freq_min
         self.freq_max: float = freq_max
 
+        rsam_dir: str = os.path.join(os.getcwd(), 'output', 'rsam')
+
         filtered_dir: str = f"filtered_{freq_min}_{freq_max}"
-        self.filtered_dir: str = os.path.join(self.rsam_dir, self.nslc, filtered_dir)
+        self.filtered_dir: str = os.path.join(rsam_dir, self.nslc, filtered_dir)
+        os.makedirs(self.filtered_dir, exist_ok=True)
 
         return self
 
@@ -213,11 +142,11 @@ class PlotRsam:
         Returns:
             str: Filename
         """
-        suffix: str = '_not_filtered'
+        suffix: str = 'not-filtered'
         if (self.freq_min is not None) & (self.freq_max is not None):
-            suffix = f"_{self.freq_min}Hz_{self.freq_max}Hz"
+            suffix = f"{self.freq_min}-{self.freq_max}Hz"
 
-        filename = f"{self.start_date}_{self.end_date}_{self.resample}{suffix}"
+        filename = f"{self.nslc}_{self.start_date}-{self.end_date}_{suffix}_{self.resample}"
 
         return filename
 
@@ -238,7 +167,7 @@ class PlotRsam:
         return combined_csv_file
 
     def handling_missing_data(self) -> Self:
-        """Fill empty data with NaN so it will plot gap nicely.
+        """Fill empty data with NaN, so it will plot gap nicely.
 
         Returns:
             Self
@@ -246,39 +175,121 @@ class PlotRsam:
         datetime_index: pd.DatetimeIndex = pd.date_range(
             start=self.start_date, end=self.end_date, freq=self.resample)
 
-        self.df.reindex(datetime_index, inplace=True)
+        self.df.reindex(datetime_index)
         return self
 
     @staticmethod
-    def calculate_matrix(df: pd.DataFrame, matrix: str, window: str) -> pd.DataFrame:
-        """Calculate matrix.
+    def calculate_metric(df: pd.DataFrame, metric: str, window: str) -> pd.DataFrame:
+        """Calculate metric.
 
         Args:
             df (pd.DataFrame): DataFrame
-            matrix (str): Matrix. Eg: 'mean' or 'median'
+            metric (str): Matrix. Eg: 'mean' or 'median'
             window (str): Window. Eg: '10min', '5min', '15min', '30min', '6h', '1d'
 
         Returns:
             pd.DataFrame
         """
-        _column_name = f"{matrix}_{window}"
+        _column_name = f"{metric}_{window}"
 
-        if matrix is 'mean':
-            df[_column_name] = df[matrix].rolling(window=window, center=True).mean()
+        if metric is 'mean':
+            df[_column_name] = df[metric].rolling(window=window, center=True).mean()
 
-        if matrix is 'median':
-            df[_column_name] = df[matrix].rolling(window=window, center=True).mean()
+        if metric is 'median':
+            df[_column_name] = df[metric].rolling(window=window, center=True).median()
 
         return df
 
+    def set_y_lim(self,
+                  y_min: int | float,
+                  y_max: int | float) -> Self:
+        self.y_min = y_min
+        self.y_max = y_max
+        return self
+
+    def plot(self,
+             df: pd.DataFrame,
+             metrics: List[str],
+             windows: List[str],
+             plot_as_log: bool = False,
+             datetime_interval: int = 3,
+             colors: List[str] = None) -> plt.Figure:
+
+        _shape_metrics_windows = len(metrics) * len(windows)
+
+        if colors is None:
+            colors = ['#FFEB3B', '#F44336']
+        elif (colors is None) and (_shape_metrics_windows > 2):
+            colors = get_color_list()
+        else:
+            assert len(colors) < _shape_metrics_windows, \
+                (f"Minimal {_shape_metrics_windows} colors must be exists in 'colors' parameter. "
+                 f"Default is ['#FFEB3B', '#F44336']")
+
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(12, 4),
+                                layout="constrained", sharex=True)
+
+        axs.scatter(df.index, df['mean'], c='k', alpha=0.2, s=3, label='10 minutes')
+
+        for metric in metrics:
+            for window in windows:
+                column_name: str = f"{metric}_{window}"
+                label: str = f"{metric} {window}"
+
+                color = random.choice(colors)
+
+                if column_name == 'median_1d':
+                    color = '#FFEB3B'
+
+                if column_name == 'mean_1d':
+                    color = '#F44336'
+
+                if color in ['#FFEB3B', '#F44336']:
+                    colors.remove(color)
+
+                axs.plot(df.index, df[column_name], c=color, label=label, alpha=1, lw=2)
+
+        y_label = 'Amplitude (count)'
+        if plot_as_log is True:
+            y_label = f"{y_label} log"
+            axs.set_yscale('log')
+
+        axs.set_ylabel(y_label)
+        axs.xaxis.set_major_locator(mdates.DayLocator(interval=datetime_interval))
+        axs.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+
+        if (self.y_min is not None) and (self.y_max is not None):
+            axs.set_ylim(self.y_min, self.y_max)
+
+        axs.set_xlim(
+            datetime.strptime(self.start_date, '%Y-%m-%d'),
+            datetime.strptime(self.end_date, '%Y-%m-%d'))
+
+        for _label in axs.get_xticklabels(which='major'):
+            _label.set(rotation=30, horizontalalignment='right')
+
+        axs.legend(loc='upper left', fontsize='10', ncol=4)
+
+        save_path: str = os.path.join(self.figures_dir, f"{self.filename}.png")
+        fig.savefig(save_path)
+        print(f"📈 RSAM Figure saved to : {save_path}")
+
+        return fig
+
     def run(self,
-            matrices: List[str] = ['mean', 'median'],
-            windows: List[str] = ['1d'],
+            metrics: List[str] = None,
+            windows: List[str] = None,
             plot_as_log: bool = False,
             datetime_interval: int = 3,
-            save_figure: bool = True,):
+            save_figure: bool = True,
+            colors: List[str] = None, ):
 
-        assert len(matrices) > 0, ValueError(f"⛔ matrices cannot be empty! Use one of the value ['mean', 'median']")
+        if windows is None:
+            windows = ['1d']
+        if metrics is None:
+            metrics = ['mean', 'median']
+
+        assert len(metrics) > 0, ValueError(f"⛔ metrics cannot be empty! Use one of the value ['mean', 'median']")
         assert len(windows) > 0, ValueError(f"⛔ windows cannot be empty! "
                                             f"See https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases")
 
@@ -286,10 +297,20 @@ class PlotRsam:
 
         df = self.handling_missing_data().df
 
-        for matrix in matrices:
-            for window in windows:
-                df = self.calculate_matrix(df, matrix, window)
+        print(f"⬆️ Max Amplitude: {df['mean'].max()}")
+        print(f"⬇️ Min Amplitude: {df['mean'].min()}")
 
-        self.plot(df=df, matrices=matrices, windows=windows)
+        for metric in metrics:
+            for window in windows:
+                df = self.calculate_metric(df, metric, window)
+
+        if save_figure is True:
+            self.plot(
+                df=df,
+                metrics=metrics,
+                windows=windows,
+                plot_as_log=plot_as_log,
+                datetime_interval=datetime_interval,
+                colors=colors)
 
         return df
