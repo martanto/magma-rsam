@@ -1,4 +1,5 @@
 import os
+from datetime import date
 from typing import List
 
 
@@ -25,3 +26,15 @@ def validate_directory(directory: str) -> bool | ValueError:
         raise ValueError(f"Directory {directory} is not valid. ")
     return True
 
+
+def validate_dates(start_date: str, end_date: str) -> bool | ValueError:
+    try:
+        start_date = date.fromisoformat(start_date)
+        end_date = date.fromisoformat(end_date)
+    except ValueError:
+        raise ValueError(f"❌ start_date or end_date has invalid format. Should be yyyy-mm-dd.")
+
+    if start_date > end_date:
+        raise ValueError(f"❌ start_date should be before end_date. Or end_date must before start_date.")
+
+    return True
