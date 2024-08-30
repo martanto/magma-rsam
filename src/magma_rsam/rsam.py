@@ -40,11 +40,6 @@ class RSAM:
         self.filter_is_on: bool = False
         self.update_db: bool = update_db
 
-        if update_db is True:
-            db.connect(reuse_if_open=True)
-            db.create_tables([RsamCSV])
-            db.close()
-
         self.corners = None
         self.freq_max = None
         self.freq_min = None
@@ -144,7 +139,7 @@ class RSAM:
             else:
                 stream = Search(
                     input_dir=self.seismic_dir,
-                    directory_structure=self.directory_structure,
+                    directory_structure=self.directory_structure.lower(),
                     station = self.station,
                     channel = self.channel,
                     network = self.network,

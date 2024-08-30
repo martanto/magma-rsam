@@ -13,8 +13,12 @@ class RsamTrace:
     resample: str = '10min'
     df: pd.DataFrame = pd.DataFrame()
 
-    def __init__(self, trace: Trace, update_db: bool = True, is_filtered: bool = False,
-                 freq_min: float = None, freq_max: float = None):
+    def __init__(self,
+                 trace: Trace,
+                 update_db: bool = True,
+                 is_filtered: bool = False,
+                 freq_min: float = None,
+                 freq_max: float = None):
         self.trace_original: Trace = trace
         self.trace: Trace = trace.copy()
 
