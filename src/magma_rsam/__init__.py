@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from magma_rsam.rsam import RSAM
-from magma_rsam.dash import app
 from magma_rsam.plot_rsam import PlotRsam
 from pkg_resources import get_distribution
 
