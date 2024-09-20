@@ -16,6 +16,8 @@ class PlotRsam:
                  end_date: str,
                  station: str,
                  channel: str,
+                 rsam_dir: str = None,
+                 figures_dir: str = None,
                  network: str = 'VG',
                  location: str = '00',
                  resample: str = '10min'):
@@ -33,9 +35,11 @@ class PlotRsam:
         self.freq_max: float | None = None
         self.nslc = f"{network}.{station}.{location}.{channel}"
 
-        rsam_dir: str = os.path.join(os.getcwd(), 'output', 'rsam')
+        if rsam_dir is None:
+            rsam_dir: str = os.path.join(os.getcwd(), 'output', 'rsam')
 
-        figures_dir: str = os.path.join(os.getcwd(), 'output', 'figures', 'rsam')
+        if figures_dir is None:
+            figures_dir: str = os.path.join(os.getcwd(), 'output', 'figures', 'rsam')
         os.makedirs(figures_dir, exist_ok=True)
         self.figures_dir = figures_dir
 
