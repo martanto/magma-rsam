@@ -40,6 +40,9 @@ class RSAM:
         self.filter_is_on: bool = False
         self.update_db: bool = update_db
 
+        if update_db is True:
+            db.create_tables([RsamCSV])
+
         self.corners = None
         self.freq_max = None
         self.freq_min = None

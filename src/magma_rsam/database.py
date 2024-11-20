@@ -15,7 +15,7 @@ def database(db_name: str = 'magma.db'):
     user_dir: str = os.path.expanduser('~')
     magma_user_dir: str = os.path.join(user_dir, '.magma')
     os.makedirs(magma_user_dir, exist_ok=True)
-    return os.path.join(user_dir, db_name)
+    return os.path.join(magma_user_dir, db_name)
 
 
 db = SqliteDatabase(database(), pragmas={

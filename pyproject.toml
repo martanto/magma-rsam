@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name =  "magma-rsam"
-version = "1.4.1"
+version = "1.4.2"
 authors = [
     {name = "Martanto", email = "martanto@live.com"},
     {name = "Devy Kamil Syahbana", email = "devy.syahbana@gmail.com"},
@@ -14,21 +14,21 @@ description = "Calculating RSAM Value"
 readme = "README.md"
 license = {file = "LICENSE"}
 keywords = ["seismic", "volcano", "volcanology", "convert", "sds", "seiscomp", "mseed"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "obspy",
-    "openpyxl",
-    "pandas",
-    "numpy",
-    "matplotlib",
-    "peewee",
+    "obspy>=1.4.0",
+    "openpyxl>=3.1.5",
+    "pandas>=2.2.2",
+    "numpy>=2.0.0",
+    "matplotlib>=3.9.0",
+    "magma-database>=1.0.0",
+    "peewee>=3.17.5",
     "magma-converter",
     "material-color",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
