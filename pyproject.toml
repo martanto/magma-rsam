@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name =  "magma-rsam"
-version = "1.4.2"
+version = "1.5.0"
 authors = [
     {name = "Martanto", email = "martanto@live.com"},
     {name = "Devy Kamil Syahbana", email = "devy.syahbana@gmail.com"},
@@ -22,6 +22,7 @@ dependencies = [
     "numpy>=2.0.0",
     "matplotlib>=3.9.0",
     "magma-database>=1.0.0",
+    "questdb[dataframe]>=2.0.3",
     "peewee>=3.17.5",
     "magma-converter",
     "material-color",
@@ -40,6 +41,8 @@ base = [
     "pandas",
     "numpy",
     "matplotlib",
+    "magma-database",
+    "questdb[dataframe]",
     "peewee",
     "magma-converter",
     "material-color",
