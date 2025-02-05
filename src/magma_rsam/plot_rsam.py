@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import os
 import random
-from .database import RsamCSV
+from magma_database import RsamCSV
 from .validator import validate_dates
 from typing import List, Self
 from material_color.color import get_color_list
@@ -57,10 +57,6 @@ class PlotRsam:
         print(f"ℹ️ Location: {location}")
         print(f"ℹ️ Resample: {resample}")
 
-        if not os.path.isdir(self.rsam_dir):
-            raise NotADirectoryError(f"⛔ The directory {self.rsam_dir} does not exist!"
-                                     f" Please run RSAM with the current parameters")
-
         self.y_min = None
         self.y_max = None
 
@@ -82,7 +78,6 @@ class PlotRsam:
 
         filtered_dir: str = f"filtered_{freq_min}_{freq_max}"
         self.filtered_dir: str = os.path.join(rsam_dir, self.nslc, filtered_dir)
-        os.makedirs(self.filtered_dir, exist_ok=True)
 
         return self
 
@@ -287,6 +282,8 @@ class PlotRsam:
             datetime_interval: int = 3,
             save_figure: bool = True,
             colors: List[str] = None, ):
+
+        os.makedirs(self.filtered_dir, exist_ok=True)
 
         if windows is None:
             windows = ['1d']

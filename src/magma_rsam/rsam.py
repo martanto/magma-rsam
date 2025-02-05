@@ -2,7 +2,8 @@ import pandas as pd
 
 from .rsam_trace import RsamTrace
 from .validator import validate_dates
-from .database import db, RsamCSV
+from magma_database import RsamCSV
+from magma_database.database import db
 from magma_converter.search import Search
 from obspy import UTCDateTime, Stream
 from obspy.clients.filesystem.sds import Client

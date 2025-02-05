@@ -5,7 +5,8 @@ from obspy import Trace, UTCDateTime
 from datetime import datetime, timedelta, timezone
 from typing import List, Self
 from .validator import validate_matrices
-from .database import db, RsamCSV
+from magma_database import RsamCSV
+from magma_database.database import db
 
 
 class RsamTrace:
@@ -175,34 +176,33 @@ class RsamTrace:
         filtered: str = f"_{self.freq_min}_{self.freq_max}"
         key: str = f"{nslc}_{date}_{resample}{filtered}"
 
-        (RsamCSV
-         .insert(
+        _rsam, created = RsamCSV.get_or_create(
             key=key,
-            nslc=nslc,
             date=date,
-            resample=resample,
-            freq_min=self.freq_min,
-            freq_max=self.freq_max,
-            file_location=file_location,
-            created_at=datetime.now(tz=timezone.utc)
+            defaults={
+                'nslc': nslc,
+                'resample': resample,
+                'freq_min': self.freq_min,
+                'freq_max': self.freq_max,
+                'file_location': file_location,
+                'created_at': datetime.now(tz=timezone.utc)
+            }
         )
-         .on_conflict(
-            conflict_target=[
-                RsamCSV.key,
-            ],
-            preserve=[
-                RsamCSV.key,
-                RsamCSV.nslc,
-                RsamCSV.date,
-                RsamCSV.resample,
-                RsamCSV.freq_min,
-                RsamCSV.freq_max,
-            ],
-            update={
-                RsamCSV.file_location: file_location,
-                RsamCSV.updated_at: datetime.now(tz=timezone.utc)
-            })
-         .execute())
+
+        rsam_id = _rsam.get_id()
+
+        if created is True:
+            return rsam_id
+
+        _rsam.key = key,
+        _rsam.nslc = nslc,
+        _rsam.date = date,
+        _rsam.resample = resample,
+        _rsam.freq_min = self.freq_min
+        _rsam.freq_max = self.freq_max
+        _rsam.file_location = file_location
+        _rsam.updated_at = datetime.now(tz=timezone.utc)
+        _rsam.save()
 
         db.close()
 
