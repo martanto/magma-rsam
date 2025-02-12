@@ -19,7 +19,8 @@ class RsamTrace:
                  update_db: bool = True,
                  is_filtered: bool = False,
                  freq_min: float = None,
-                 freq_max: float = None):
+                 freq_max: float = None,
+                 verbose: bool = True,):
         self.trace_original: Trace = trace
         self.trace: Trace = trace.copy()
 
@@ -47,6 +48,7 @@ class RsamTrace:
         self.freq_min = freq_min
         self.update_db: bool = update_db
         self.csv_file: str | None = None
+        self.verbose: bool = verbose
 
     def refresh(self) -> Self:
         """Refresh initial values of RSAM parameters
@@ -159,7 +161,8 @@ class RsamTrace:
         Returns:
             Self
         """
-        print("⌚ {} Calculating for {}".format(self.start_date_str, self.trace.id))
+        if self.verbose:
+            print("⌚ {} Calculating for {}".format(self.start_date_str, self.trace.id))
 
         df: pd.DataFrame = pd.DataFrame()
         matrices = self.matrices
@@ -236,7 +239,9 @@ class RsamTrace:
             if self.update_db is True:
                 self.update_database(self.trace.id, self.start_date_str, self.resample, csv_file)
 
-            print("💾 Saved to {}".format(csv_file))
+            if self.verbose:
+                print("💾 Saved to {}".format(csv_file))
         else:
-            print(f'⚠️ Not saved. Not enough data for {self.id}')
+            if self.verbose:
+                print(f'⚠️ Not saved. Not enough data for {self.id}')
         return self
