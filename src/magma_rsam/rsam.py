@@ -2,13 +2,15 @@ import pandas as pd
 
 from .rsam_trace import RsamTrace
 from .validator import validate_dates
-from magma_database import RsamCSV
+from magma_database import RsamCSV, Station
 from magma_database.database import db
 from magma_converter.search import Search
+from magma_converter.database import DatabaseConverter
 from obspy import UTCDateTime, Stream
 from obspy.clients.filesystem.sds import Client
 from typing import Dict, List, Self
 from datetime import date
+from tqdm.notebook import tqdm
 
 
 class RSAM:
@@ -43,7 +45,7 @@ class RSAM:
         self.update_db: bool = update_db
 
         if update_db is True:
-            db.create_tables([RsamCSV])
+            db.create_tables([RsamCSV, Station])
 
         self.corners = None
         self.freq_max = None
@@ -128,7 +130,7 @@ class RSAM:
         # TODO: looping through date
         dates = pd.date_range(start_date, end_date, freq='1D')
 
-        for date_obj in dates:
+        for date_obj in tqdm(dates):
             date_str: str = date_obj.strftime('%Y-%m-%d')
 
             # Check existing calculated RSAM
@@ -158,6 +160,17 @@ class RSAM:
                 if self.verbose:
                     print(f"⚠️ {date_str} :: Skip. No traces found")
                 continue
+
+            if self.update_db is True:
+                # Make sure station exists
+                for trace in stream:
+                    station = {
+                        'station': trace.stats.station,
+                        'network': trace.stats.network,
+                        'location': trace.stats.location,
+                        'channel': trace.stats.channel,
+                    }
+                    DatabaseConverter.update_station(station=station)
 
             if self.filter_is_on is True:
                 if self.verbose:
