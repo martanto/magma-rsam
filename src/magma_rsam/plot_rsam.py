@@ -90,7 +90,7 @@ class PlotRsam:
         """
         rsam_db = RsamCSV.select().where(
             (RsamCSV.nslc == self.nslc) &
-            (RsamCSV.resample >= self.resample) &
+            (RsamCSV.resample == self.resample) &
             (RsamCSV.date >= self.start_date) &
             (RsamCSV.date <= self.end_date) &
             (RsamCSV.freq_min == self.freq_min) &
