@@ -165,6 +165,7 @@ class RSAM:
                 # Make sure station exists
                 for trace in stream:
                     station = {
+                        'nslc': trace.id,
                         'station': trace.stats.station,
                         'network': trace.stats.network,
                         'location': trace.stats.location,

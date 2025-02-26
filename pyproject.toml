@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name =  "magma-rsam"
-version = "1.7.1"
+version = "1.7.2"
 authors = [
     {name = "Martanto", email = "martanto@live.com"},
     {name = "Devy Kamil Syahbana", email = "devy.syahbana@gmail.com"},
@@ -26,6 +26,7 @@ dependencies = [
     "peewee>=3.17.5",
     "magma-converter",
     "material-color",
+    "tqdm",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
