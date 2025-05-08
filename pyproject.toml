@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name =  "magma-rsam"
-version = "1.7.2"
+version = "1.7.3"
 authors = [
     {name = "Martanto", email = "martanto@live.com"},
     {name = "Devy Kamil Syahbana", email = "devy.syahbana@gmail.com"},
@@ -16,10 +16,10 @@ license = {file = "LICENSE"}
 keywords = ["seismic", "volcano", "volcanology", "convert", "sds", "seiscomp", "mseed"]
 requires-python = ">=3.11"
 dependencies = [
-    "obspy>=1.4.0",
+    "obspy>=1.4.2",
     "openpyxl>=3.1.5",
     "pandas>=2.2.2",
-    "numpy>=2.0.0",
+    "numpy>=2.2.5",
     "matplotlib>=3.9.0",
     "magma-database>=1.0.0",
     "questdb[dataframe]>=2.0.3",
