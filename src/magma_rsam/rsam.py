@@ -2,13 +2,15 @@ import pandas as pd
 
 from .rsam_trace import RsamTrace
 from .validator import validate_dates
-from magma_database import RsamCSV
+from magma_database import RsamCSV, Station
 from magma_database.database import db
 from magma_converter.search import Search
+from magma_converter.database import DatabaseConverter
 from obspy import UTCDateTime, Stream
 from obspy.clients.filesystem.sds import Client
 from typing import Dict, List, Self
 from datetime import date
+from tqdm.notebook import tqdm
 
 
 class RSAM:
@@ -21,7 +23,8 @@ class RSAM:
                  network: str = 'VG',
                  location: str = '00',
                  directory_structure: str = 'sds',
-                 update_db: bool = True,):
+                 update_db: bool = True,
+                 verbose: bool = True,):
 
         self.start_date = start_date
         self.end_date = end_date
@@ -42,12 +45,13 @@ class RSAM:
         self.update_db: bool = update_db
 
         if update_db is True:
-            db.create_tables([RsamCSV])
+            db.create_tables([RsamCSV, Station])
 
         self.corners = None
         self.freq_max = None
         self.freq_min = None
         self.files: Dict[str, List[Dict[str, str]]] = {}
+        self.verbose: bool = verbose
 
     def from_date(self, start_date: str) -> Self:
         assert date.fromisoformat(start_date), f"❌ date format must be yyyy-mm-dd"
@@ -83,7 +87,8 @@ class RSAM:
         self.freq_max = freq_max
         self.corners = corners
         self.filter_is_on = True
-        print(f"ℹ️ Filter is on.")
+        if self.verbose:
+            print(f"ℹ️ Filter is on.")
         return self
 
     def rsam_already_running(self, station: str, date_str: str) -> RsamCSV | None:
@@ -125,7 +130,7 @@ class RSAM:
         # TODO: looping through date
         dates = pd.date_range(start_date, end_date, freq='1D')
 
-        for date_obj in dates:
+        for date_obj in tqdm(dates):
             date_str: str = date_obj.strftime('%Y-%m-%d')
 
             # Check existing calculated RSAM
@@ -134,7 +139,8 @@ class RSAM:
             rsam_csv = self.rsam_already_running(station=self.station, date_str=date_str)
 
             if rsam_csv is not None:
-                print(f"✅ {date_str} :: File RSAM for {rsam_csv.nslc} : {rsam_csv.file_location}")
+                if self.verbose:
+                    print(f"✅ {date_str} :: File RSAM for {rsam_csv.nslc} : {rsam_csv.file_location}")
                 self.add_to_files(trace_id=rsam_csv.nslc, date_str=date_str, file_location=rsam_csv.file_location)
                 continue
 
@@ -151,17 +157,31 @@ class RSAM:
                 ).search(date_str=date_str)
 
             if len(stream) == 0:
-                print(f"⚠️ {date_str} :: Skip. No traces found")
+                if self.verbose:
+                    print(f"⚠️ {date_str} :: Skip. No traces found")
                 continue
 
+            if self.update_db is True:
+                # Make sure station exists
+                for trace in stream:
+                    station = {
+                        'nslc': trace.id,
+                        'station': trace.stats.station,
+                        'network': trace.stats.network,
+                        'location': trace.stats.location,
+                        'channel': trace.stats.channel,
+                    }
+                    DatabaseConverter.update_station(station=station)
+
             if self.filter_is_on is True:
-                print(f"🔄️ Apply filter")
+                if self.verbose:
+                    print(f"🔄️ Apply filter")
                 stream.filter('bandpass', freqmin=self.freq_min,
                               freqmax=self.freq_max, corners=self.corners)
 
             for trace in stream:
                 rsam_trace = RsamTrace(trace, update_db=self.update_db, is_filtered=self.filter_is_on,
-                                       freq_min=self.freq_min, freq_max=self.freq_max)
+                                       freq_min=self.freq_min, freq_max=self.freq_max, verbose=self.verbose)
                 rsam_trace.calculate().save()
 
                 self.add_to_files(trace_id=trace.id, date_str=date_str, file_location=rsam_trace.csv_file)
