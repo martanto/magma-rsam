@@ -24,6 +24,7 @@ class RSAM:
                  location: str = '00',
                  directory_structure: str = 'sds',
                  update_db: bool = True,
+                 resample: str = '10min',
                  verbose: bool = True,):
 
         self.start_date = start_date
@@ -40,6 +41,7 @@ class RSAM:
         self.nslc: str = f"{network}.{station}.{location}.{channel}"
         self.directory_structure: str = directory_structure
         self.rsam: Dict[str, RsamTrace] = {}
+        self.resample = resample
 
         self.filter_is_on: bool = False
         self.update_db: bool = update_db
@@ -150,10 +152,11 @@ class RSAM:
                 stream = Search(
                     input_dir=self.seismic_dir,
                     directory_structure=self.directory_structure.lower(),
-                    station = self.station,
-                    channel = self.channel,
-                    network = self.network,
-                    location = self.location
+                    station=self.station,
+                    channel=self.channel,
+                    network=self.network,
+                    location=self.location,
+                    check_file_integrity=True,
                 ).search(date_str=date_str)
 
             if len(stream) == 0:
@@ -181,7 +184,7 @@ class RSAM:
 
             for trace in stream:
                 rsam_trace = RsamTrace(trace, update_db=self.update_db, is_filtered=self.filter_is_on,
-                                       freq_min=self.freq_min, freq_max=self.freq_max, verbose=self.verbose)
+                                       freq_min=self.freq_min, freq_max=self.freq_max, verbose=self.verbose,)
                 rsam_trace.calculate().save()
 
                 self.add_to_files(trace_id=trace.id, date_str=date_str, file_location=rsam_trace.csv_file)

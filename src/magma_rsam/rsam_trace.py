@@ -11,7 +11,6 @@ from magma_database.database import db
 
 class RsamTrace:
     matrices: List[str] = ['min', 'mean', 'max', 'median', 'std']
-    resample: str = '10min'
     df: pd.DataFrame = pd.DataFrame()
 
     def __init__(self,
@@ -20,6 +19,7 @@ class RsamTrace:
                  is_filtered: bool = False,
                  freq_min: float = None,
                  freq_max: float = None,
+                 resample: str = '10min',
                  verbose: bool = True,):
         self.trace_original: Trace = trace
         self.trace: Trace = trace.copy()
@@ -36,7 +36,7 @@ class RsamTrace:
 
         self.matrices: List[str] = RsamTrace.matrices
         self.is_filtered: bool = is_filtered
-        self.resample: str = RsamTrace.resample
+        self.resample: str = resample
         self.df: pd.DataFrame = RsamTrace.df
 
         if update_db is True:
@@ -70,7 +70,7 @@ class RsamTrace:
 
         self.matrices: List[str] = RsamTrace.matrices
         self.is_filtered: bool = self.is_filtered
-        self.resample: str = RsamTrace.resample
+        self.resample: str = self.resample
         self.df: pd.DataFrame = RsamTrace.df
 
         self.freq_max = None
