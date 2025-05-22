@@ -152,11 +152,11 @@ class RSAM:
                 stream = Search(
                     input_dir=self.seismic_dir,
                     directory_structure=self.directory_structure.lower(),
-                    station = self.station,
-                    channel = self.channel,
-                    network = self.network,
-                    location = self.location,
-                    check_file_integrity = True,
+                    station=self.station,
+                    channel=self.channel,
+                    network=self.network,
+                    location=self.location,
+                    check_file_integrity=True,
                 ).search(date_str=date_str)
 
             if len(stream) == 0:
