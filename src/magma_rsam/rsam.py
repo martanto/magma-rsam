@@ -155,7 +155,8 @@ class RSAM:
                     station = self.station,
                     channel = self.channel,
                     network = self.network,
-                    location = self.location
+                    location = self.location,
+                    check_file_integrity = True,
                 ).search(date_str=date_str)
 
             if len(stream) == 0:
