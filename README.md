@@ -1,5 +1,8 @@
 # magma-rsam
-Python package to calculating RSAM Value
+Python package to calculating RSAM Value.  
+https://pypi.org/project/magma-rsam/
+
+## How to use
 
 ```python
 from magma_rsam import RSAM, PlotRsam
