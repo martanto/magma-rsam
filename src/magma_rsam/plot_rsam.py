@@ -22,6 +22,7 @@ class PlotRsam:
         network: str = "VG",
         location: str = "00",
         resample: str = "10min",
+        verbose: bool = False,
     ):
 
         validate_dates(start_date, end_date)
@@ -32,6 +33,7 @@ class PlotRsam:
         self.network = network
         self.location = location
         self.resample = resample
+        self.verbose = verbose
 
         self.freq_min: float | None = None
         self.freq_max: float | None = None
@@ -125,6 +127,10 @@ class PlotRsam:
         df_list: List[pd.DataFrame] = []
 
         for csv in self.csv_files:
+            if not os.path.exists(csv):
+                if self.verbose:
+                    print(f"⚠️ File not found: {csv}")
+                continue
             _df = pd.read_csv(csv)
             if not _df.empty:
                 df_list.append(_df)
@@ -199,10 +205,10 @@ class PlotRsam:
         """
         _column_name = f"{metric}_{window}"
 
-        if metric is "mean":
+        if metric == "mean":
             df[_column_name] = df[metric].rolling(window=window, center=True).mean()
 
-        if metric is "median":
+        if metric == "median":
             df[_column_name] = df[metric].rolling(window=window, center=True).median()
 
         return df

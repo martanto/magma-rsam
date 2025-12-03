@@ -150,7 +150,7 @@ class RSAM:
                 if rsam_csv is not None:
                     if self.verbose:
                         print(
-                            f"✅ {date_str} :: File RSAM for {rsam_csv.nslc} : {rsam_csv.file_location}"
+                            f"✅ {date_str} :: File RSAM for {rsam_csv} : {rsam_csv.file_location}"
                         )
                     self.add_to_files(
                         trace_id=rsam_csv.nslc,
