@@ -1,5 +1,40 @@
+# Environment variables
+.env
 
-/output
-/dist
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
 /.idea
-/.jupyter
+*.egg-info
+
+# Virtual environments
+.venv
+/logs
+/output
+.uv_cache
+.mypy_cache
+.ruff_cache
+*.log
+*.csv
+*.png
+*.ipynb
+
+# Test outputs (cleaned up automatically)
+tests/output/
+/.cache/
+/.claude/
+
+# Live pipeline config (user-specific; use config.example.yaml as template)
+/config.yaml
+
+# Daily changelogs (local only)
+/changelogs/
+
+# Temporary test files in root directory
+/test*.py
+/test_*.py
+/.github/
+output*
