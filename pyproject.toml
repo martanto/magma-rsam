@@ -1,14 +1,12 @@
 [build-system]
-requires = ["flit_core>=3.4"]
-build-backend = "flit_core.buildapi"
+requires = ["uv_build"]
+build-backend = "uv_build"
 
 [project]
 name =  "magma-rsam"
-version = "1.8.0"
+version = "2.0.0"
 authors = [
     {name = "Martanto", email = "martanto@live.com"},
-    {name = "Devy Kamil Syahbana", email = "devy.syahbana@gmail.com"},
-    {name = "Syarif Abdul Manaf", email = "riefmof@gmail.com"},
 ]
 description = "Calculating RSAM Value"
 readme = "README.md"
@@ -24,7 +22,7 @@ dependencies = [
     "magma-database>=1.5.0",
     "magma-converter>=1.9.0",
     "questdb[dataframe]>=2.0.3",
-    "peewee>=3.17.5",
+    "peewee>=3.18.3",
     "material-color",
     "tqdm",
 ]
