@@ -14,24 +14,27 @@ from tqdm.notebook import tqdm
 
 
 class RSAM:
-    def __init__(self,
-                 start_date: str,
-                 seismic_dir: str,
-                 station: str,
-                 end_date: str = None,
-                 channel: str = '*',
-                 network: str = 'VG',
-                 location: str = '00',
-                 directory_structure: str = 'sds',
-                 update_db: bool = True,
-                 resample: str = '10min',
-                 verbose: bool = True,):
+    def __init__(
+        self,
+        start_date: str,
+        seismic_dir: str,
+        station: str,
+        end_date: str = None,
+        channel: str = "*",
+        network: str = "VG",
+        location: str = "00",
+        directory_structure: str = "sds",
+        update_db: bool = True,
+        overwrite: bool = False,
+        resample: str = "10min",
+        verbose: bool = True,
+    ):
 
         self.start_date = start_date
         self.end_date = end_date
 
         if end_date is None:
-            self.end_date = date.today().strftime('%Y-%m-%d')
+            self.end_date = date.today().strftime("%Y-%m-%d")
 
         self.station: str = station
         self.channel: str = channel
@@ -46,13 +49,14 @@ class RSAM:
         self.filter_is_on: bool = False
         self.update_db: bool = update_db
 
-        if update_db is True:
+        if update_db:
             db.create_tables([RsamCSV, Station])
 
         self.corners = None
         self.freq_max = None
         self.freq_min = None
         self.files: Dict[str, List[Dict[str, str]]] = {}
+        self.overwrite = overwrite
         self.verbose: bool = verbose
 
     def from_date(self, start_date: str) -> Self:
@@ -98,10 +102,10 @@ class RSAM:
         freq_max: float = self.freq_max
 
         query = RsamCSV.select().where(
-            (RsamCSV.key.contains(station)) &
-            (RsamCSV.date == date_str) &
-            (RsamCSV.freq_min == freq_min) &
-            (RsamCSV.freq_max == freq_max)
+            (RsamCSV.key.contains(station))
+            & (RsamCSV.date == date_str)
+            & (RsamCSV.freq_min == freq_min)
+            & (RsamCSV.freq_max == freq_max)
         )
 
         return query.first()
@@ -130,23 +134,32 @@ class RSAM:
         validate_dates(start_date, end_date)
 
         # TODO: looping through date
-        dates = pd.date_range(start_date, end_date, freq='1D')
+        dates = pd.date_range(start_date, end_date, freq="1D")
 
         for date_obj in tqdm(dates):
-            date_str: str = date_obj.strftime('%Y-%m-%d')
+            date_str: str = date_obj.strftime("%Y-%m-%d")
 
             # Check existing calculated RSAM
             # If exist then, continue next date
             # else, calculate
-            rsam_csv = self.rsam_already_running(station=self.station, date_str=date_str)
+            if not self.overwrite:
+                rsam_csv = self.rsam_already_running(
+                    station=self.station, date_str=date_str
+                )
 
-            if rsam_csv is not None:
-                if self.verbose:
-                    print(f"✅ {date_str} :: File RSAM for {rsam_csv.nslc} : {rsam_csv.file_location}")
-                self.add_to_files(trace_id=rsam_csv.nslc, date_str=date_str, file_location=rsam_csv.file_location)
-                continue
+                if rsam_csv is not None:
+                    if self.verbose:
+                        print(
+                            f"✅ {date_str} :: File RSAM for {rsam_csv} : {rsam_csv.file_location}"
+                        )
+                    self.add_to_files(
+                        trace_id=rsam_csv.nslc,
+                        date_str=date_str,
+                        file_location=rsam_csv.file_location,
+                    )
+                    continue
 
-            if self.directory_structure.lower() == 'sds':
+            if self.directory_structure.lower() == "sds":
                 stream = self.from_sds(date_str)
             else:
                 stream = Search(
@@ -164,29 +177,50 @@ class RSAM:
                     print(f"⚠️ {date_str} :: Skip. No traces found")
                 continue
 
-            if self.update_db is True:
+            if self.verbose:
+                print(f"ℹ️ Found {len(stream)} traces. Merging... ", end="")
+            stream = stream.merge(fill_value=0)
+            if self.verbose:
+                print(f"✅")
+
+            if self.update_db:
                 # Make sure station exists
                 for trace in stream:
                     station = {
-                        'nslc': trace.id,
-                        'station': trace.stats.station,
-                        'network': trace.stats.network,
-                        'location': trace.stats.location,
-                        'channel': trace.stats.channel,
+                        "nslc": trace.id,
+                        "station": trace.stats.station,
+                        "network": trace.stats.network,
+                        "location": trace.stats.location,
+                        "channel": trace.stats.channel,
                     }
                     DatabaseConverter.update_station(station=station)
 
-            if self.filter_is_on is True:
+            if self.filter_is_on:
                 if self.verbose:
                     print(f"🔄️ Apply filter")
-                stream.filter('bandpass', freqmin=self.freq_min,
-                              freqmax=self.freq_max, corners=self.corners)
+                stream.filter(
+                    "bandpass",
+                    freqmin=self.freq_min,
+                    freqmax=self.freq_max,
+                    corners=self.corners,
+                )
 
             for trace in stream:
-                rsam_trace = RsamTrace(trace, update_db=self.update_db, is_filtered=self.filter_is_on,
-                                       freq_min=self.freq_min, freq_max=self.freq_max, verbose=self.verbose,)
+                rsam_trace = RsamTrace(
+                    trace,
+                    update_db=self.update_db,
+                    is_filtered=self.filter_is_on,
+                    freq_min=self.freq_min,
+                    freq_max=self.freq_max,
+                    verbose=self.verbose,
+                )
+
                 rsam_trace.calculate().save()
 
-                self.add_to_files(trace_id=trace.id, date_str=date_str, file_location=rsam_trace.csv_file)
+                self.add_to_files(
+                    trace_id=trace.id,
+                    date_str=date_str,
+                    file_location=rsam_trace.csv_file,
+                )
 
         return self
