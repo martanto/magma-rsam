@@ -14,17 +14,7 @@ license = {file = "LICENSE"}
 keywords = ["seismic", "volcano", "volcanology", "convert", "sds", "seiscomp", "mseed"]
 requires-python = ">=3.11"
 dependencies = [
-    "obspy>=1.4.2",
-    "openpyxl>=3.1.5",
-    "pandas>=2.2.2",
-    "numpy>=2.2.5",
-    "matplotlib>=3.9.0",
-    "magma-database>=1.5.0",
-    "magma-converter>=1.9.0",
-    "questdb[dataframe]>=2.0.3",
-    "peewee>=3.18.3",
-    "material-color",
-    "tqdm",
+
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -40,11 +30,6 @@ base = [
     "pandas",
     "numpy",
     "matplotlib",
-    "magma-database",
-    "questdb[dataframe]",
-    "peewee",
-    "magma-converter",
-    "material-color",
 ]
 
 [project.urls]
