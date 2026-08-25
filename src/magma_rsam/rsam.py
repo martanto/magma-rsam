@@ -46,8 +46,18 @@ class RSAM:
         self.filter_is_on: bool = False
         self.update_db: bool = update_db
 
-        if update_db is True:
-            db.create_tables([RsamCSV, Station])
+        if self.update_db is True:
+            DatabaseConverter.check_tables()
+
+            for trace in stream:
+                station = {
+                    "nslc": trace.id,
+                    "station": trace.stats.station,
+                    "network": trace.stats.network,
+                    "location": trace.stats.location,
+                    "channel": trace.stats.channel,
+                }
+                DatabaseConverter.update_station(station=station)
 
         self.corners = None
         self.freq_max = None
